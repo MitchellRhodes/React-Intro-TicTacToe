@@ -4,33 +4,25 @@ import './index.css';
 
 
 
-/*The DOM <button> element’s onClick attribute has a special meaning to React
-because it is a built-in component.*/
+//This Square component is known as 'Controlled components'. Board has control over each one
+//If a component only contains a render method and doesn't have an individual state then
+//make it a function component instead of a class.
+function Square(props) {
 
-/*It's best to use on[Event] names for props(properties) for props which 
-represent events and handle[Event] for the methods which handle the events.
-You can give any name to the Square’s onClick prop or Board’s handleClick 
-method, and the code would work the same.*/
-
-class Square extends React.Component {
-
-    render() {
-        return (
-            /*The onClick prop on the built-in DOM <button> component tells React to set up a click event listener.
+    return (
+        /*The onClick prop on the built-in DOM <button> component tells React to set up a click event listener.
 When the button is clicked, React will call the onClick event handler that is defined in Square’s render() method.
 This event handler calls this.props.onClick(). The Square’s onClick prop was specified by the Board.
 Since the Board passed onClick={() => this.handleClick(i)} to Square, the Square calls this.handleClick(i) when clicked.
 */
-            <button
-                className="square"
-                onClick={() => { this.props.onClick({ value: 'X' }) }}
-            >
-
-                {this.props.value}
-            </button>
-        );
-    }
+        <button className="square" onClick={props.onClick}>
+            {props.value}
+        </button>
+    );
 }
+
+
+
 class Board extends React.Component {
     /*In JavaScript classes, you need to always call super when defining the constructor of a subclass. All React component 
     classes that have a constructor should start with a super(props) call.*/
@@ -40,13 +32,18 @@ class Board extends React.Component {
         super(props);
         this.state = {
             squares: Array(9).fill(null),
+            xIsNext: true,
         }
     }
 
     handleClick(i) {
+        //.slice() creates a copy of the squares array to modify rather than the existing. This is for Immutatability see bottom.
         const squares = this.state.squares.slice();
-        squares[i] = 'X';
-        this.setState({ squares: squares });
+        squares[i] = this.state.xIsNext ? 'X' : 'O';
+        this.setState({
+            squares: squares,
+            xIsNext: !this.state.xIsNext,
+        });
     }
 
     /*these are what is being passed down to sqaure*/
@@ -56,7 +53,7 @@ class Board extends React.Component {
     }
 
     render() {
-        const status = 'Next player: X';
+        const status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
 
         return (
             <div>
@@ -103,3 +100,37 @@ ReactDOM.render(
     <Game />,
     document.getElementById('root')
 );
+
+
+
+
+
+
+
+//NOTES======================================================================
+
+/*The DOM <button> element’s onClick attribute has a special meaning to React
+because it is a built-in component.*/
+
+/*It's best to use on[Event] names for props(properties) for props which
+represent events and handle[Event] for the methods which handle the events.
+You can give any name to the Square’s onClick prop or Board’s handleClick
+method, and the code would work the same.*/
+
+
+
+
+//IMPORTANCE OF IMMUTATABILITY
+/* Avoiding direct data mutation lets us keep previous versions of the game’s
+history intact, and reuse them later.
+
+Detecting changes in mutable objects is difficult because they are modified directly.
+This detection requires the mutable object to be compared to previous copies
+of itself. Detecting changes in immutable objects is considerably easier.
+If the immutable object that is being referenced is different than the
+previous one, then the object has changed.
+
+The main benefit of immutability is that it helps you build pure components in React.
+Immutable data can easily determine if changes have been made, which helps to determine
+when a component requires re-rendering. */
+
