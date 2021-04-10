@@ -72,4 +72,4 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 
 ### Changelog
 
-Made a tic tac toe game as and intro to working with react.
+Made a tic tac toe game as an intro to working with react.
