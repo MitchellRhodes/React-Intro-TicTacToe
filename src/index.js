@@ -24,49 +24,17 @@ Since the Board passed onClick={() => this.handleClick(i)} to Square, the Square
 
 
 class Board extends React.Component {
-    /*In JavaScript classes, you need to always call super when defining the constructor of a subclass. All React component 
-    classes that have a constructor should start with a super(props) call.*/
-
-    //the constructor will keep track of the game's state
-    constructor(props) {
-        super(props);
-        this.state = {
-            squares: Array(9).fill(null),
-            xIsNext: true,
-        }
-    }
-
-    handleClick(i) {
-        //.slice() creates a copy of the squares array to modify rather than the existing. This is for Immutatability see bottom.
-        const squares = this.state.squares.slice();
-        if (calculateWinner(squares) || squares[i]) {
-            return;
-        }
-        squares[i] = this.state.xIsNext ? 'X' : 'O';
-        this.setState({
-            squares: squares,
-            xIsNext: !this.state.xIsNext,
-        });
-    }
 
     /*these are what is being passed down to sqaure*/
     renderSquare(i) {
-        return <Square value={this.state.squares[i]}
-            onClick={() => this.handleClick(i)} />;
+        return <Square value={this.props.squares[i]}
+            onClick={() => this.props.onClick(i)} />;
     }
 
     render() {
-        const winner = calculateWinner(this.state.squares);
-        let status;
-        if (winner) {
-            status = 'Winner: ' + winner;
-        } else {
-            status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
-        }
 
         return (
             <div>
-                <div className="status">{status}</div>
                 <div className="board-row">
                     {this.renderSquare(0)}
                     {this.renderSquare(1)}
@@ -88,15 +56,90 @@ class Board extends React.Component {
 }
 
 class Game extends React.Component {
+    /*In JavaScript classes, you need to always call super when defining the constructor of a subclass. All React component 
+    classes that have a constructor should start with a super(props) call.*/
+
+    //the constructor will keep track of the game's state
+    constructor(props) {
+        super(props);
+        this.state = {
+            history: [{
+                squares: Array(9).fill(null),
+            }],
+            stepNumber: 0,
+            xIsNext: true,
+        };
+    }
+
+    handleClick(i) {
+        //This ensures that if we “go back in time” and then make a new move from that point, we throw away all the “future” history that would now become incorrect.
+        const history = this.state.history.slice(0, this.state.stepNumber + 1);
+        const current = history[history.length - 1];
+        //.slice() creates a copy of the squares array to modify rather than the existing. This is for Immutatability see bottom.
+        const squares = current.squares.slice();
+
+        if (calculateWinner(squares) || squares[i]) {
+            return;
+        }
+        squares[i] = this.state.xIsNext ? 'X' : 'O';
+        this.setState({
+            //concat is used instead of push because it doesn't mutate the orignal array
+            history: history.concat([{
+                squares: squares,
+            }]),
+            stepNumber: history.length,
+            xIsNext: !this.state.xIsNext,
+        });
+    }
+
+    //xIsNext is true if the number stepNumber is changing to is even
+    jumpTo(step) {
+        this.setState({
+            stepNumber: step,
+            xIsNext: (step % 2) === 0,
+        })
+    }
+
+
     render() {
+        const history = this.state.history;
+        const current = history[this.state.stepNumber];
+        const winner = calculateWinner(current.squares);
+
+
+        //for each move a list button is created.  button has a onClick handler which calls a method called this.jumpTo()
+        const moves = history.map((step, move) => {
+            const desc = move ?
+                'Go to move #' + move :
+                'Go to game start';
+            return (
+                //having a key id is important. moves are never re-ordered, deleted, or inserted in the middle, so it’s safe to use the move index as a key
+                <li key={move}>
+                    <button onClick={() => this.jumpTo(move)}>{desc}</button>
+                </li>
+            );
+        });
+
+        let status;
+        if (winner) {
+            status = 'Winner: ' + winner;
+        } else {
+            status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+        }
+
+
+
         return (
             <div className="game">
                 <div className="game-board">
-                    <Board />
+                    <Board
+                        squares={current.squares}
+                        onClick={(i) => this.handleClick(i)}
+                    />
                 </div>
                 <div className="game-info">
-                    <div>{/* status */}</div>
-                    <ol>{/* TODO */}</ol>
+                    <div>{status}</div>
+                    <ol>{moves}</ol>
                 </div>
             </div>
         );
